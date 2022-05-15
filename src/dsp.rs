@@ -12,6 +12,7 @@ pub fn process_thread(mut consumer: Consumer<f32>, mut delivery_mutex: Arc<Mutex
             loop{
                 // Loop until the ringbuffer has enough samples
                 if consumer.len() >= BUFFER_SIZE {
+                    // TODO: Carry over FFT like wolf
                     // NOTE: We always know the max length, so an array would be possible
                     // Init the buffer
                     let mut buffer = Vec::<Complex<f32>>::new();
@@ -23,10 +24,8 @@ pub fn process_thread(mut consumer: Consumer<f32>, mut delivery_mutex: Arc<Mutex
                     }, Some(BUFFER_SIZE));
                     
                     // Calculate the hann window and multiply it by the signal
-                    let hann_window = hann_window(BUFFER_SIZE);
-
                     for i in 0..BUFFER_SIZE {
-                        buffer[i] *= hann_window[i];
+                        buffer[i] *= hann_window(i, BUFFER_SIZE);
                     }
 
                     // Calculate how much 0s have to be padded and do so
@@ -43,7 +42,7 @@ pub fn process_thread(mut consumer: Consumer<f32>, mut delivery_mutex: Arc<Mutex
 
                     fft.process(&mut buffer);
 
-                    //TODO: dB scaling
+                    //TODO: Weird dropoff around 20k Hz. Maybe platform specific?
                     // Convert the complex signal into magnitudes
                     // Source: http://www.dspguide.com/ch8/8.htm
                     // NOTE: dB scaling source: https://github.com/wolf-plugins/wolf-spectrum/blob/master/src/Widgets/src/Spectrogram.cpp#L167
@@ -51,7 +50,25 @@ pub fn process_thread(mut consumer: Consumer<f32>, mut delivery_mutex: Arc<Mutex
                     .map(|e:&Complex<f32>| {
                         let real:f32 = e.re;
                         let imag:f32 = e.im;
-                        (real.pow(2_i8) + imag.pow(2_i8)).sqrt()
+                        (real.pow(2_i8) + imag.pow(2_i8)) * (2. / BUFFER_SIZE as f32)
+                    })
+                    .map(|e| {
+                        10. * (e+1e-9).log10()
+                    })
+                    .map(|e| {
+                        if e < -90. {
+                            return -90.
+                        }
+                        e
+                    })
+                    .map(|e| {
+                        1. - (e / -90.)
+                    })
+                    .map(|e| {
+                        if e > 1. {
+                            return 1.
+                        }
+                        e
                     })
                     .collect();
 
@@ -66,12 +83,6 @@ pub fn process_thread(mut consumer: Consumer<f32>, mut delivery_mutex: Arc<Mutex
 }
 
 /// A hann window for the size n
-fn hann_window(n: usize) -> Vec<f32> {
-    let mut window:Vec<f32> = Vec::new();
-
-    for k in 0..n {
-        window.push(0.5 * (1. - ((2. * std::f32::consts::PI * k as f32) / ((n-1) as f32)).cos()));
-    }
-
-    window
+fn hann_window(i:usize, n: usize) -> f32 {
+    0.5 * (1. - ((2. * std::f32::consts::PI * i as f32) / ((n-1) as f32)).cos())
 }

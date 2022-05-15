@@ -7,7 +7,8 @@ pub struct Spectrometer {
     style: Style,
     scale: Scale,
     col: vizia::vg::Color,
-    smoothing_factor: f32
+    smoothing_factor: f32,
+    slope: f32
 }
 
 pub enum VisEvents {
@@ -27,14 +28,15 @@ pub enum Scale {
 }
 
 impl Spectrometer {
-    pub fn new<L: Lens<Target = Vec<f32>>>(cx: &mut Context, lens: L, sampling_rate: usize, style: Style, scale:Scale, col: vizia::vg::Color, smoothing_factor: f32) -> Handle<Self> {
+    pub fn new<L: Lens<Target = Vec<f32>>>(cx: &mut Context, lens: L, sampling_rate: usize, style: Style, scale:Scale, col: vizia::vg::Color, smoothing_factor: f32, slope: f32) -> Handle<Self> {
         Self {
             data: lens.get(cx),
             sr: sampling_rate,
             style,
             scale,
             col,
-            smoothing_factor
+            smoothing_factor,
+            slope
         }
         .build(cx, move |cx| {
             // Bind the input lens to the meter event to update the position
@@ -78,6 +80,7 @@ impl View for Spectrometer {
         let data = &self.data;
 
         //TODO: 4.5dB dropoff pink noise
+        //https://www.reddit.com/r/audioengineering/comments/agcr8d/i_ran_whitepink_noise_through_my_system_and/
         
         match self.style {
             Style::Spectrum => {
@@ -98,7 +101,7 @@ impl View for Spectrometer {
                 
                 let mut line_paint = Paint::color(self.col);
                 // let mut line_paint = Paint::color(Color::hex("#f54e47"));
-                line_paint.set_line_width(3.0);
+                line_paint.set_line_width(2.0);
 
                 canvas.stroke_path(&mut line_path, line_paint);
             }
@@ -109,11 +112,7 @@ impl View for Spectrometer {
                 // Util function to go [0,1] to bin, since the bins are overfitting
 
                 for i in 1..data.len() {
-                     let position = map(
-                         lin2log(
-                             bin2freq(i, data.len(), self.sr), 
-                                 20., self.sr as f32 / 2.), 
-                         0., 1., 0., width);
+                     let position = scale(bin2freq(i, data.len(), self.sr), self.scale, self.sr, width);
 
                     color_vec.push((position, gradient_color_map(data[i])));
                 }
@@ -140,7 +139,7 @@ fn scale(pos: f32, scale_type: Scale, sr: usize, width: f32) -> f32 {
             map(pos.log10(), 20.0_f32.log10(), (sr as f32 / 2.).log10(),  0., width)
         }
         Scale::Linear => {
-            pos
+            map(pos, 20.0, (sr as f32 / 2.),  0., width)
         }
     }
 }
@@ -150,13 +149,6 @@ fn scale(pos: f32, scale_type: Scale, sr: usize, width: f32) -> f32 {
 /// Source: https://mu.krj.st/spectrm/
 fn bin2freq(bin_idx: usize, bin_amt: usize, sample_rate: usize) -> f32 {
     bin_idx as f32 * (sample_rate as f32 / bin_amt as f32)
-}
-
-/// Maps linear values logarithmically between min and max frequency values, where everything is a frequency in [0,1] times half the sampling rate
-/// 
-/// Source: https://mu.krj.st/spectrm/
-fn lin2log(val: f32, min: f32, max:f32) -> f32 {
-    map(val.log10(), min.log10(), max.log10(), 0., 1.)
 }
 
 /// Maps [x0,x1] to [y0,y1] linearly at position val in [x0,x1] 
