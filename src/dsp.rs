@@ -13,7 +13,10 @@ pub fn process_thread(mut consumer: Consumer<f32>, mut delivery_mutex: Arc<Mutex
                 // Loop until the ringbuffer has enough samples
                 if consumer.len() >= BUFFER_SIZE {
                     // TODO: Carry over FFT like wolf
-                    // NOTE: We always know the max length, so an array would be possible
+                    // TODO: We always know the max length, so an array would be possible
+                    // TODO: Constant-Q transform
+                    // https://en.wikipedia.org/wiki/Constant-Q_transform
+                    
                     // Init the buffer
                     let mut buffer = Vec::<Complex<f32>>::new();
                     
@@ -50,23 +53,14 @@ pub fn process_thread(mut consumer: Consumer<f32>, mut delivery_mutex: Arc<Mutex
                     .map(|e:&Complex<f32>| {
                         let real:f32 = e.re;
                         let imag:f32 = e.im;
-                        (real.pow(2_i8) + imag.pow(2_i8)) * (2. / BUFFER_SIZE as f32)
+                        (real.pow(2_i8) + imag.pow(2_i8)).sqrt()
                     })
                     .map(|e| {
-                        10. * (e+1e-9).log10()
+                        20. * (e+1e-9).log10()
                     })
                     .map(|e| {
                         if e < -90. {
                             return -90.
-                        }
-                        e
-                    })
-                    .map(|e| {
-                        1. - (e / -90.)
-                    })
-                    .map(|e| {
-                        if e > 1. {
-                            return 1.
                         }
                         e
                     })
@@ -86,3 +80,4 @@ pub fn process_thread(mut consumer: Consumer<f32>, mut delivery_mutex: Arc<Mutex
 fn hann_window(i:usize, n: usize) -> f32 {
     0.5 * (1. - ((2. * std::f32::consts::PI * i as f32) / ((n-1) as f32)).cos())
 }
+

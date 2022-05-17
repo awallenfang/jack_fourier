@@ -77,7 +77,19 @@ impl View for Spectrometer {
         let width = bounds.w;
         let height = bounds.h;
 
-        let data = &self.data;
+        let mut data = self.data.clone();
+
+        for (i,val) in data.iter_mut().enumerate() {
+            let mut new_val = *val;
+            let octave = bin2freq(i, self.data.len(), self.sr).log2();
+            new_val += octave * 3.;
+
+            if new_val > 0. {
+
+                new_val = 0.;
+            }
+            *val = 10_f32.powf(new_val / 20.);
+        }
 
         //TODO: 4.5dB dropoff pink noise
         //https://www.reddit.com/r/audioengineering/comments/agcr8d/i_ran_whitepink_noise_through_my_system_and/
@@ -144,11 +156,11 @@ fn scale(pos: f32, scale_type: Scale, sr: usize, width: f32) -> f32 {
     }
 }
 
-/// Converts the bin index to a frequency position in [0,1], where 1 is half the sampling rate according to the Nyquist Theorem
+/// Converts the bin index to a frequency in Hz
 /// 
 /// Source: https://mu.krj.st/spectrm/
 fn bin2freq(bin_idx: usize, bin_amt: usize, sample_rate: usize) -> f32 {
-    bin_idx as f32 * (sample_rate as f32 / bin_amt as f32)
+    bin_idx as f32 * (sample_rate as f32 / (2. * bin_amt as f32))
 }
 
 /// Maps [x0,x1] to [y0,y1] linearly at position val in [x0,x1] 
@@ -162,9 +174,25 @@ fn map(val: f32, x0: f32, x1: f32, y0: f32, y1: f32) -> f32 {
 fn gradient_color_map(val: f32) -> vizia::vg::Color {
     let col = vizia::vg::Color::rgb((val * 255.) as u8, (val * 255.) as u8, (val * 255.) as u8);
     if col.r != 0.0 {
-        println!("{:?}", col);
 
     }
     col    
     // vizia::vg::Color::white()
+}
+
+/// The scale to correct for frequency density differences
+fn shift_scale(bin: usize, bin_amt: usize,  db: f32, min_freq: f32, max_freq: f32, sr: usize) -> f32 {
+    let m = (20_f32).powf(pos_in_octaves(bin, bin_amt, sr, min_freq, max_freq) * db/20.);
+    
+    //m.powf(pos_in_octaves(bin, bin_amt, sr, min_freq, max_freq))
+    //bin2freq(bin, bin_amt, sr).powf(m-1.)
+    m
+}
+
+fn amount_of_octaves(min_freq: f32, max_freq: f32) -> f32 {
+    (max_freq / min_freq).log2()
+}
+
+fn pos_in_octaves(bin: usize, bin_amt:usize, sr:usize, min_freq: f32, max_freq: f32) -> f32 {
+    amount_of_octaves(min_freq, max_freq) - amount_of_octaves(bin2freq(bin, bin_amt, sr), max_freq)
 }
