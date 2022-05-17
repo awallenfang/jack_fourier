@@ -53,10 +53,10 @@ pub fn process_thread(mut consumer: Consumer<f32>, mut delivery_mutex: Arc<Mutex
                     .map(|e:&Complex<f32>| {
                         let real:f32 = e.re;
                         let imag:f32 = e.im;
-                        (real.pow(2_i8) + imag.pow(2_i8)).sqrt()
+                        real.pow(2_i8) + imag.pow(2_i8)
                     })
                     .map(|e| {
-                        20. * (e+1e-9).log10()
+                        10. * (e+1e-9).log10()
                     })
                     .map(|e| {
                         if e < -90. {

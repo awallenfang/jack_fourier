@@ -88,7 +88,7 @@ impl View for Spectrometer {
 
                 new_val = 0.;
             }
-            *val = 10_f32.powf(new_val / 20.);
+            *val = new_val;
         }
 
         //TODO: 4.5dB dropoff pink noise
@@ -106,8 +106,8 @@ impl View for Spectrometer {
                     // Logarithmic scaling
                     // Source: https://mu.krj.st/spectrm/
                     position = scale(bin2freq(i, data.len(), self.sr), self.scale, self.sr, width);
-
-                    line_path.line_to(position, (1. - data[i]) * height);
+                    let y_pos = map(data[i], 0., -90., 0., 1.);
+                    line_path.line_to(position, y_pos * height);
                 }
 
                 
@@ -178,21 +178,4 @@ fn gradient_color_map(val: f32) -> vizia::vg::Color {
     }
     col    
     // vizia::vg::Color::white()
-}
-
-/// The scale to correct for frequency density differences
-fn shift_scale(bin: usize, bin_amt: usize,  db: f32, min_freq: f32, max_freq: f32, sr: usize) -> f32 {
-    let m = (20_f32).powf(pos_in_octaves(bin, bin_amt, sr, min_freq, max_freq) * db/20.);
-    
-    //m.powf(pos_in_octaves(bin, bin_amt, sr, min_freq, max_freq))
-    //bin2freq(bin, bin_amt, sr).powf(m-1.)
-    m
-}
-
-fn amount_of_octaves(min_freq: f32, max_freq: f32) -> f32 {
-    (max_freq / min_freq).log2()
-}
-
-fn pos_in_octaves(bin: usize, bin_amt:usize, sr:usize, min_freq: f32, max_freq: f32) -> f32 {
-    amount_of_octaves(min_freq, max_freq) - amount_of_octaves(bin2freq(bin, bin_amt, sr), max_freq)
 }
