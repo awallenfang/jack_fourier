@@ -7,7 +7,7 @@ use rustfft::{FftPlanner};
 use rustfft::num_complex::Complex;
 use crate::{BUFFER_SIZE, FFT_SIZE};
 
-pub fn process_thread(mut consumer: Consumer<f32>, mut delivery_mutex: Arc<Mutex<Vec<f32>>>) {
+pub fn process_thread(mut consumer: Consumer<f32>, delivery_mutex: Arc<Mutex<Vec<f32>>>) {
     thread::spawn(move || {
             loop{
                 // Loop until the ringbuffer has enough samples

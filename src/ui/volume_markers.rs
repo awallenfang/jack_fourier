@@ -12,7 +12,7 @@ impl VolumeMarkers {
             min: -90.,
             max: 0.,
             stops: 7
-        }.build(cx, |cx| {})
+        }.build(cx, |_cx| {})
     }
 }
 

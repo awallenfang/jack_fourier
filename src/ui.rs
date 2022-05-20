@@ -31,7 +31,7 @@ pub enum Events {
     Update(Vec<f32>)
 }
 
-pub fn ui(mut delivery_mutex: Arc<Mutex<Vec<f32>>>, sampling_rate: usize) {
+pub fn ui(delivery_mutex: Arc<Mutex<Vec<f32>>>, sampling_rate: usize) {
     
     Application::new(move |cx| {
         UIData {

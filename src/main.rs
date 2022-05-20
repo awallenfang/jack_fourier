@@ -11,7 +11,7 @@ pub const FFT_SIZE: usize = 4096;
 
 fn main() {
     let jack_dsp_rb = RingBuffer::<f32>::new(50_000);
-    let (mut jack_dsp_prod, mut jack_dsp_cons) = jack_dsp_rb.split();
+    let (mut jack_dsp_prod, jack_dsp_cons) = jack_dsp_rb.split();
     
     let (client, _status) =
         jack::Client::new("jack_fourier", jack::ClientOptions::NO_START_SERVER).unwrap();

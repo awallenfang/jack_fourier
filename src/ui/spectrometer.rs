@@ -100,13 +100,12 @@ impl View for Spectrometer {
                 let mut line_path = Path::new();
                 line_path.move_to(0.0, height);
 
-                let mut position = 0. as f32;
 
                 for i in 1..data.len() {
                     // TODO: sinc interpolation
                     // Logarithmic scaling
                     // Source: https://mu.krj.st/spectrm/
-                    position = scale(bin2freq(i, data.len(), self.sr), self.scale, self.sr, width);
+                    let position = scale(bin2freq(i, data.len(), self.sr), self.scale, self.sr, width);
                     let y_pos = map(data[i].get_smooth_val(), 0., -90., 0., 1.);
                     line_path.line_to(position, y_pos * height);
                 }
