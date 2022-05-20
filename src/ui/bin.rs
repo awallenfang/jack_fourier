@@ -49,4 +49,12 @@ impl Bin {
     pub fn get_frequency(&self) -> f32 {
         self.frequency
     }
+
+    pub fn set_attack(&mut self, attack: f32) {
+        self.attack = attack;
+    }
+
+    pub fn set_release(&mut self, release: f32) {
+        self.release = release
+    }
 }

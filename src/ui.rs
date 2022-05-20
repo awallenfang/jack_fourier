@@ -15,6 +15,8 @@ mod volume_markers;
 #[derive(Lens)]
 pub struct UIData {
     data: Vec<f32>,
+    attack: f32,
+    release: f32,
 }
 
 impl Model for UIData {
@@ -35,8 +37,13 @@ pub fn ui(delivery_mutex: Arc<Mutex<Vec<f32>>>, sampling_rate: usize) {
     Application::new(move |cx| {
         UIData {
             data: vec![-90.; crate::FFT_SIZE],
+            attack: 0.5,
+            release: 0.9,
         }
         .build(cx);
+
+        // TODO: Add knobs to connect attack and release over lenses
+
         ZStack::new(cx, |cx| {
             FrequencyMarkers::new(cx, sampling_rate);
             VolumeMarkers::new(cx);
