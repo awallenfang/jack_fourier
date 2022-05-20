@@ -1,11 +1,14 @@
 use std::sync::{Arc, Mutex};
 
 use vizia::prelude::*;
-use crate::ui::visualizer::Spectrometer;
+use crate::{ui::{spectrometer::Spectrometer, frequency_markers::FrequencyMarkers, volume_markers::VolumeMarkers}};
 
-use self::visualizer::{Style, Scale};
+use self::spectrometer::{Style, Scale};
 
-mod visualizer;
+mod spectrometer;
+mod frequency_markers;
+mod volume_markers;
+pub(crate) mod bin;
 
 #[derive(Lens)]
 pub struct UIData {
@@ -32,16 +35,13 @@ pub fn ui(mut delivery_mutex: Arc<Mutex<Vec<f32>>>, sampling_rate: usize) {
     
     Application::new(move |cx| {
         UIData {
-            data: vec![0.0; crate::FFT_SIZE],
+            data: vec![-90.; crate::FFT_SIZE],
         }.build(cx);
         ZStack::new(cx, |cx| {
-            // Spectrometer::new(cx, UIData::data, sampling_rate, Style::Spectrum, Scale::Root(0.2));
-            // Spectrometer::new(cx, UIData::data, sampling_rate, Style::Spectrum, Scale::Root(0.5));
-            // Spectrometer::new(cx, UIData::data, sampling_rate, Style::Spectrum, Scale::Root(0.6));
-            // Spectrometer::new(cx, UIData::data, sampling_rate, Style::Spectrum, Scale::Linear);
-            Spectrometer::new(cx, UIData::data, sampling_rate, Style::Spectrum, Scale::Logarithmic, vizia::vg::Color::hex("#f54e47"), 0.5, 0.);
-            // Spectrometer::new(cx, UIData::data, sampling_rate, Style::Spectrum, Scale::Linear, vizia::vg::Color::hex("#00ff00"));
-            // Spectrometer::new(cx, UIData::data, sampling_rate, Style::Spectrum, Scale::Logarithmic, vizia::vg::Color::white());
+            FrequencyMarkers::new(cx, sampling_rate);
+            VolumeMarkers::new(cx);
+            Spectrometer::new(cx, UIData::data, sampling_rate, Style::Spectrum, Scale::Logarithmic, vizia::vg::Color::hex("#f54e47"), 0.4, 3.);
+            
         });
         
 

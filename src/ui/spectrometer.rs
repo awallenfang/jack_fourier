@@ -1,14 +1,14 @@
 use vizia::prelude::*;
 use vizia::vg::{Color, Paint, Path, ImageFlags};
-use image;
+
+use crate::ui::bin::Bin;
+
 pub struct Spectrometer {
-    data: Vec<f32>,
+    data: Vec<Bin>,
     sr: usize,
     style: Style,
     scale: Scale,
     col: vizia::vg::Color,
-    smoothing_factor: f32,
-    slope: f32
 }
 
 pub enum VisEvents {
@@ -30,13 +30,11 @@ pub enum Scale {
 impl Spectrometer {
     pub fn new<L: Lens<Target = Vec<f32>>>(cx: &mut Context, lens: L, sampling_rate: usize, style: Style, scale:Scale, col: vizia::vg::Color, smoothing_factor: f32, slope: f32) -> Handle<Self> {
         Self {
-            data: lens.get(cx),
+            data: vec![Bin::new(-90.); crate::FFT_SIZE],
             sr: sampling_rate,
             style,
             scale,
-            col,
-            smoothing_factor,
-            slope
+            col
         }
         .build(cx, move |cx| {
             // Bind the input lens to the meter event to update the position
@@ -52,10 +50,8 @@ impl View for Spectrometer {
         event.map(|e, _| {
             match e {
                 VisEvents::Update(data) => {
-                    let new_data = data.clone();
-
-                    for i in 0..(new_data.len()) {
-                        self.data[i] -= self.smoothing_factor * (self.data[i] - new_data[i]);
+                    for (i, val) in data.iter().enumerate() {
+                        self.data[i].update(*val);
                     }
 
                     cx.style().needs_redraw = true;
@@ -77,19 +73,24 @@ impl View for Spectrometer {
         let width = bounds.w;
         let height = bounds.h;
 
-        let mut data = self.data.clone();
+        let data = self.data.clone();
 
-        for (i,val) in data.iter_mut().enumerate() {
-            let mut new_val = *val;
-            let octave = bin2freq(i, self.data.len(), self.sr).log2();
-            new_val += octave * 3.;
+        // Still not working T.T
+        // I give up for now
 
-            if new_val > 0. {
-
-                new_val = 0.;
-            }
-            *val = new_val;
-        }
+        // for (i,val) in data.iter_mut().enumerate() {
+        //     let mut new_val = *val;
+        //     if new_val > -89. {  
+        //         let octave = bin2freq(i, self.data.len(), self.sr).log2();
+        //         new_val += (octave) * self.slope;
+    
+        //         if new_val > 0. {
+    
+        //             new_val = 0.;
+        //         }
+        //         *val = new_val;
+        //     }            
+        // }
 
         //TODO: 4.5dB dropoff pink noise
         //https://www.reddit.com/r/audioengineering/comments/agcr8d/i_ran_whitepink_noise_through_my_system_and/
@@ -106,7 +107,7 @@ impl View for Spectrometer {
                     // Logarithmic scaling
                     // Source: https://mu.krj.st/spectrm/
                     position = scale(bin2freq(i, data.len(), self.sr), self.scale, self.sr, width);
-                    let y_pos = map(data[i], 0., -90., 0., 1.);
+                    let y_pos = map(data[i].get_smooth_val(), 0., -90., 0., 1.);
                     line_path.line_to(position, y_pos * height);
                 }
 
@@ -126,7 +127,7 @@ impl View for Spectrometer {
                 for i in 1..data.len() {
                      let position = scale(bin2freq(i, data.len(), self.sr), self.scale, self.sr, width);
 
-                    color_vec.push((position, gradient_color_map(data[i])));
+                    color_vec.push((position, gradient_color_map(data[i].get_smooth_val())));
                 }
 
                 let paint = Paint::linear_gradient_stops(0.0, 0.0, width, 0.0, &color_vec);
@@ -148,7 +149,7 @@ fn scale(pos: f32, scale_type: Scale, sr: usize, width: f32) -> f32 {
             map(pos.powf(n), 20.0_f32.powf(n), (sr as f32 / 2.).powf(n), 0., width)
         }
         Scale::Logarithmic => {
-            map(pos.log10(), 20.0_f32.log10(), (sr as f32 / 2.).log10(),  0., width)
+            map(pos.log2(), 20.0_f32.log2(), (sr as f32 / 2.).log2(),  0., width)
         }
         Scale::Linear => {
             map(pos, 20.0, (sr as f32 / 2.),  0., width)

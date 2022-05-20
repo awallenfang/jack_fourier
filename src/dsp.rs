@@ -16,6 +16,8 @@ pub fn process_thread(mut consumer: Consumer<f32>, mut delivery_mutex: Arc<Mutex
                     // TODO: We always know the max length, so an array would be possible
                     // TODO: Constant-Q transform
                     // https://en.wikipedia.org/wiki/Constant-Q_transform
+                    // TODO: Research for other transforms with more exact low frequencies
+                    // Increasing the sample content adds more low frequency data
                     
                     // Init the buffer
                     let mut buffer = Vec::<Complex<f32>>::new();
@@ -45,10 +47,8 @@ pub fn process_thread(mut consumer: Consumer<f32>, mut delivery_mutex: Arc<Mutex
 
                     fft.process(&mut buffer);
 
-                    //TODO: Weird dropoff around 20k Hz. Maybe platform specific?
                     // Convert the complex signal into magnitudes
                     // Source: http://www.dspguide.com/ch8/8.htm
-                    // NOTE: dB scaling source: https://github.com/wolf-plugins/wolf-spectrum/blob/master/src/Widgets/src/Spectrogram.cpp#L167
                     let magnitudes: Vec<f32> = buffer[0..(buffer.len() as f32 / 2.).floor() as usize + 1].iter()
                     .map(|e:&Complex<f32>| {
                         let real:f32 = e.re;

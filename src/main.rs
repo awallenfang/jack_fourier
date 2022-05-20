@@ -6,8 +6,8 @@ use jack;
 mod dsp;
 mod ui;
 
-pub const BUFFER_SIZE: usize = 1024;
-pub const FFT_SIZE: usize = 8192;
+pub const BUFFER_SIZE: usize = 256;
+pub const FFT_SIZE: usize = 4096;
 
 fn main() {
     let jack_dsp_rb = RingBuffer::<f32>::new(50_000);
@@ -40,11 +40,9 @@ fn main() {
 
     let jack_client = client.activate_async((), process).unwrap();
 
-    let mut dsp_ui_mutex = Arc::new(Mutex::new(vec![0.0;1024]));
+    let dsp_ui_mutex = Arc::new(Mutex::new(vec![-90.;1024]));
 
     dsp::process_thread(jack_dsp_cons, dsp_ui_mutex.clone());
     
     ui::ui(dsp_ui_mutex.clone(), sr);
-
-    loop {}
 }
