@@ -48,12 +48,19 @@ impl View for VolumeMarkers {
             let text_metrics = canvas.measure_text(0., 0., &vol_text, text_paint);
 
             if let Ok(metrics) = text_metrics {
-                canvas.fill_text(
+                let res = canvas.fill_text(
                     width - metrics.width(),
                     n as f32 * step_height,
                     &vol_text,
                     text_paint,
                 );
+
+                match res {
+                    Ok(_) => {}
+                    Err(_) => {
+                        println!("Failed to write volume labels.")
+                    }
+                };
             }
 
             path.move_to(0., n as f32 * step_height);

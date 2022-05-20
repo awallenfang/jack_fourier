@@ -15,11 +15,13 @@ pub enum VisEvents {
     Update(Vec<f32>),
 }
 
+#[allow(dead_code)]
 pub enum Style {
     Spectrum,
     Gradient,
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Copy)]
 pub enum Scale {
     Linear,

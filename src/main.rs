@@ -27,7 +27,7 @@ fn main() {
             // Write output
             for input_l in in_p {
                 // Check if the current volume is at the destination by checking if there's steps left
-                jack_dsp_prod.push(*input_l);
+                jack_dsp_prod.push(*input_l).unwrap_or(());
             }
 
             // Continue as normal

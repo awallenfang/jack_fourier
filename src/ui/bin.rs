@@ -37,6 +37,7 @@ impl Bin {
         self.smooth_val
     }
 
+    #[allow(dead_code)]
     pub fn get_raw_val(&self) -> f32 {
         self.val
     }

@@ -6,6 +6,7 @@ const C_FREQUENCIES: &[f32] = &[
     16744.036,
 ];
 
+#[allow(dead_code)]
 pub struct FrequencyMarkers {
     min: f32,
     max: f32,
@@ -68,7 +69,14 @@ impl View for FrequencyMarkers {
 
             path.move_to(x_pos, 0.);
             path.line_to(x_pos, height);
-            canvas.fill_text(x_pos, height, &freq_text, text_paint);
+            let res = canvas.fill_text(x_pos, height, &freq_text, text_paint);
+
+            match res {
+                Ok(_) => {}
+                Err(_) => {
+                    println!("Failed to write frequency labels.")
+                }
+            };
         }
 
         canvas.stroke_path(&mut path, line_paint);
