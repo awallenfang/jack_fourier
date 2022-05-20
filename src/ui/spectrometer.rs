@@ -36,8 +36,15 @@ impl Spectrometer {
         scale: Scale,
         col: vizia::vg::Color,
     ) -> Handle<Self> {
+        // Build the data vector and precompute all frequencies
+        let mut data = vec![Bin::new(-90.); crate::FFT_SIZE];
+
+        for (i, bin) in data.iter_mut().enumerate() {
+            bin.set_frequency(bin2freq(i, crate::FFT_SIZE, sampling_rate));
+        }
+
         Self {
-            data: vec![Bin::new(-90.); crate::FFT_SIZE],
+            data,
             sr: sampling_rate,
             style,
             scale,
@@ -83,6 +90,7 @@ impl View for Spectrometer {
         // Still not working T.T
         // I give up for now
 
+        // This is old code where data was just a vec of f32s
         // for (i,val) in data.iter_mut().enumerate() {
         //     let mut new_val = *val;
         //     if new_val > -89. {
@@ -105,13 +113,12 @@ impl View for Spectrometer {
                 let mut line_path = Path::new();
                 line_path.move_to(0.0, height);
 
-                for i in 1..data.len() {
+                for bin in data {
                     // TODO: sinc interpolation
                     // Logarithmic scaling
                     // Source: https://mu.krj.st/spectrm/
-                    let position =
-                        scale(bin2freq(i, data.len(), self.sr), self.scale, self.sr, width);
-                    let y_pos = map(data[i].get_smooth_val(), 0., -90., 0., 1.);
+                    let position = scale(bin.get_frequency(), self.scale, self.sr, width);
+                    let y_pos = map(bin.get_smooth_val(), 0., -90., 0., 1.);
                     line_path.line_to(position, y_pos * height);
                 }
 
@@ -127,11 +134,10 @@ impl View for Spectrometer {
                 // Split into 16px wide rectangles that are seperately gradiented
                 // Util function to go [0,1] to bin, since the bins are overfitting
 
-                for i in 1..data.len() {
-                    let position =
-                        scale(bin2freq(i, data.len(), self.sr), self.scale, self.sr, width);
+                for bin in data {
+                    let position = scale(bin.get_frequency(), self.scale, self.sr, width);
 
-                    color_vec.push((position, gradient_color_map(data[i].get_smooth_val())));
+                    color_vec.push((position, gradient_color_map(bin.get_smooth_val())));
                 }
 
                 let paint = Paint::linear_gradient_stops(0.0, 0.0, width, 0.0, &color_vec);

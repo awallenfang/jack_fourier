@@ -40,4 +40,12 @@ impl Bin {
     pub fn get_raw_val(&self) -> f32 {
         self.val
     }
+
+    pub fn set_frequency(&mut self, freq: f32) {
+        self.frequency = freq;
+    }
+
+    pub fn get_frequency(&self) -> f32 {
+        self.frequency
+    }
 }
