@@ -5,7 +5,7 @@ use ringbuf::RingBuffer;
 mod dsp;
 mod ui;
 
-pub const BUFFER_SIZE: usize = 256;
+pub const BUFFER_SIZE: usize = 1024;
 pub const FFT_SIZE: usize = 4096;
 
 fn main() {
