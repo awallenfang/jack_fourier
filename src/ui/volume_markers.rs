@@ -3,7 +3,7 @@ use vizia::vg::{Paint, Path};
 pub struct VolumeMarkers {
     min: f32,
     max: f32,
-    stops: i32
+    stops: i32,
 }
 
 impl VolumeMarkers {
@@ -11,8 +11,9 @@ impl VolumeMarkers {
         Self {
             min: -90.,
             max: 0.,
-            stops: 7
-        }.build(cx, |_cx| {})
+            stops: 7,
+        }
+        .build(cx, |_cx| {})
     }
 }
 
@@ -37,7 +38,7 @@ impl View for VolumeMarkers {
         let line_paint = Paint::color(vizia::vg::Color::hex("#565454"));
 
         let text_paint = Paint::color(vizia::vg::Color::white());
-        
+
         let mut path = Path::new();
         let mut volume_db = 0.;
         for n in 1..=self.stops {
@@ -45,13 +46,18 @@ impl View for VolumeMarkers {
             let vol_text = format!("-{}dB", volume_db);
 
             let text_metrics = canvas.measure_text(0., 0., &vol_text, text_paint);
-            
+
             if let Ok(metrics) = text_metrics {
-                canvas.fill_text(width - metrics.width(), n as f32*step_height, &vol_text, text_paint);
+                canvas.fill_text(
+                    width - metrics.width(),
+                    n as f32 * step_height,
+                    &vol_text,
+                    text_paint,
+                );
             }
 
-            path.move_to(0., n as f32*step_height);
-            path.line_to(width, n as f32*step_height);
+            path.move_to(0., n as f32 * step_height);
+            path.line_to(width, n as f32 * step_height);
         }
 
         canvas.stroke_path(&mut path, line_paint);

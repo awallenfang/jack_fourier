@@ -1,7 +1,7 @@
-use std::sync::{Mutex, Arc};
+use std::sync::{Arc, Mutex};
 
-use ringbuf::RingBuffer;
 use jack;
+use ringbuf::RingBuffer;
 
 mod dsp;
 mod ui;
@@ -12,7 +12,7 @@ pub const FFT_SIZE: usize = 4096;
 fn main() {
     let jack_dsp_rb = RingBuffer::<f32>::new(50_000);
     let (mut jack_dsp_prod, jack_dsp_cons) = jack_dsp_rb.split();
-    
+
     let (client, _status) =
         jack::Client::new("jack_fourier", jack::ClientOptions::NO_START_SERVER).unwrap();
 
@@ -33,16 +33,16 @@ fn main() {
 
             // Continue as normal
             jack::Control::Continue
-        }
+        },
     );
 
     let sr = client.sample_rate();
 
     let jack_client = client.activate_async((), process).unwrap();
 
-    let dsp_ui_mutex = Arc::new(Mutex::new(vec![-90.;1024]));
+    let dsp_ui_mutex = Arc::new(Mutex::new(vec![-90.; 1024]));
 
     dsp::process_thread(jack_dsp_cons, dsp_ui_mutex.clone());
-    
+
     ui::ui(dsp_ui_mutex.clone(), sr);
 }
