@@ -1,6 +1,5 @@
 use std::sync::{Arc, Mutex};
 
-use jack;
 use ringbuf::RingBuffer;
 
 mod dsp;
@@ -38,11 +37,11 @@ fn main() {
 
     let sr = client.sample_rate();
 
-    let jack_client = client.activate_async((), process).unwrap();
+    let _jack_client = client.activate_async((), process).unwrap();
 
     let dsp_ui_mutex = Arc::new(Mutex::new(vec![-90.; 1024]));
 
     dsp::process_thread(jack_dsp_cons, dsp_ui_mutex.clone());
 
-    ui::ui(dsp_ui_mutex.clone(), sr);
+    ui::ui(dsp_ui_mutex, sr);
 }

@@ -1,5 +1,5 @@
 use vizia::prelude::*;
-use vizia::vg::{Color, ImageFlags, Paint, Path};
+use vizia::vg::{Paint, Path};
 
 use crate::ui::bin::Bin;
 
@@ -162,7 +162,7 @@ fn scale(pos: f32, scale_type: Scale, sr: usize, width: f32) -> f32 {
             0.,
             width,
         ),
-        Scale::Linear => map(pos, 20.0, (sr as f32 / 2.), 0., width),
+        Scale::Linear => map(pos, 20.0, sr as f32 / 2., 0., width),
     }
 }
 

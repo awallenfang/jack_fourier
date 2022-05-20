@@ -35,8 +35,8 @@ pub fn process_thread(mut consumer: Consumer<f32>, delivery_mutex: Arc<Mutex<Vec
                 );
 
                 // Calculate the hann window and multiply it by the signal
-                for i in 0..BUFFER_SIZE {
-                    buffer[i] *= hann_window(i, BUFFER_SIZE);
+                for (i, val) in buffer.iter_mut().enumerate().take(BUFFER_SIZE) {
+                    *val *= hann_window(i, BUFFER_SIZE);
                 }
 
                 // Calculate how much 0s have to be padded and do so

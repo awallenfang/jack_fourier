@@ -18,7 +18,7 @@ pub struct UIData {
 }
 
 impl Model for UIData {
-    fn event(&mut self, cx: &mut Context, event: &mut Event) {
+    fn event(&mut self, _cx: &mut Context, event: &mut Event) {
         event.map(|e, _| match e {
             Events::Update(data) => {
                 self.data = data.clone();
@@ -47,8 +47,6 @@ pub fn ui(delivery_mutex: Arc<Mutex<Vec<f32>>>, sampling_rate: usize) {
                 Style::Spectrum,
                 Scale::Logarithmic,
                 vizia::vg::Color::hex("#f54e47"),
-                0.4,
-                3.,
             );
         });
     })
