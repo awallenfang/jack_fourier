@@ -9,10 +9,14 @@ pub struct Spectrometer {
     style: Style,
     scale: Scale,
     col: vizia::vg::Color,
+    attack: f32,
+    release: f32
 }
 
 pub enum VisEvents {
     Update(Vec<f32>),
+    UpdateAttack(f32),
+    UpdateRelease(f32)
 }
 
 #[allow(dead_code)]
@@ -51,6 +55,8 @@ impl Spectrometer {
             style,
             scale,
             col,
+            attack: 0.5,
+            release: 0.9
         }
         .build(cx, move |cx| {
             // Bind the input lens to the meter event to update the position
@@ -70,6 +76,13 @@ impl View for Spectrometer {
                 }
 
                 cx.style().needs_redraw = true;
+            }
+            VisEvents::UpdateAttack(x) => {
+                self.data.iter_mut().for_each(|bin| bin.set_attack(*x));
+                println!("yes");
+            }
+            VisEvents::UpdateRelease(x) => {
+                self.data.iter_mut().for_each(|bin| bin.set_release(*x));
             }
         });
     }
@@ -150,6 +163,30 @@ impl View for Spectrometer {
                 canvas.fill_path(&mut path, paint);
             }
         }
+    }
+}
+
+
+pub trait SpectrometerHandle {
+    fn attack(self, val: impl Res<f32>) -> Self;
+    fn release(self, val: impl Res<f32>) -> Self;
+}
+
+impl SpectrometerHandle for Handle<'_, Spectrometer> {
+    fn attack(self, val: impl Res<f32>) -> Self {
+        val.set_or_bind(self.cx, self.entity, |cx, entity, value| {
+            cx.emit_to(entity, VisEvents::UpdateAttack(value));
+        });
+
+        self
+    }
+
+    fn release(self, val: impl Res<f32>) -> Self {
+        val.set_or_bind(self.cx, self.entity, |cx, entity, value| {
+            cx.emit_to(entity, VisEvents::UpdateRelease(value));
+        });
+
+        self
     }
 }
 

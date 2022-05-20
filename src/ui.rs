@@ -5,7 +5,7 @@ use crate::ui::{
 };
 use vizia::prelude::*;
 
-use self::spectrometer::{Scale, Style};
+use self::spectrometer::{Scale, Style, SpectrometerHandle};
 
 pub(crate) mod bin;
 mod frequency_markers;
@@ -90,16 +90,22 @@ pub fn ui(delivery_mutex: Arc<Mutex<Vec<f32>>>, sampling_rate: usize) {
                     Style::Spectrum,
                     Scale::Logarithmic,
                     vizia::vg::Color::hex("#f54e47"),
-                );
-                // .attack(UIData::attack)
-                // .release(UIData::release);
+                )
+                .attack(UIData::attack)
+                .release(UIData::release);
             })
             .height(Percentage(80.));
             HStack::new(cx, |cx| {
-                Knob::new(cx, 0.5, UIData::attack, false)
-                .on_changing(move |cx, val| cx.emit(Events::AttackChange(val)));
-                Knob::new(cx, 0.9, UIData::release, false)
-                .on_changing(move |cx, val| cx.emit(Events::ReleaseChange(val)));
+                VStack::new(cx, |cx| {
+                    Knob::new(cx, 0.5, UIData::attack, false)
+                    .on_changing(move |cx, val| cx.emit(Events::AttackChange(val)));
+                    Label::new(cx, "Attack");
+                });
+                VStack::new(cx, |cx| {
+                    Knob::new(cx, 0.9, UIData::release, false)
+                    .on_changing(move |cx, val| cx.emit(Events::ReleaseChange(val)));
+                    Label::new(cx, "Release");
+                });
             });
         });
         
