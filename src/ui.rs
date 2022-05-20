@@ -14,16 +14,17 @@ mod volume_markers;
 
 const STYLE: &str = r#"
     label {
-        width: 200px;
-        height: 30px;
-        child-space: 1s;
         font-size: 20;
         color: #C2C2C2;
+        left: 1s;
+        right: 1s;
     }
     
     knob {
         width: 100px;
         height: 100px;
+        left: 1s;
+        right: 1s;
     }
     
     knob .track {

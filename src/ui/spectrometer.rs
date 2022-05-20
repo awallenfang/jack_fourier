@@ -8,9 +8,7 @@ pub struct Spectrometer {
     sr: usize,
     style: Style,
     scale: Scale,
-    col: vizia::vg::Color,
-    attack: f32,
-    release: f32
+    col: vizia::vg::Color
 }
 
 pub enum VisEvents {
@@ -54,9 +52,7 @@ impl Spectrometer {
             sr: sampling_rate,
             style,
             scale,
-            col,
-            attack: 0.5,
-            release: 0.9
+            col
         }
         .build(cx, move |cx| {
             // Bind the input lens to the meter event to update the position
@@ -79,7 +75,6 @@ impl View for Spectrometer {
             }
             VisEvents::UpdateAttack(x) => {
                 self.data.iter_mut().for_each(|bin| bin.set_attack(*x));
-                println!("yes");
             }
             VisEvents::UpdateRelease(x) => {
                 self.data.iter_mut().for_each(|bin| bin.set_release(*x));
