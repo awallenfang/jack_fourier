@@ -12,6 +12,32 @@ mod frequency_markers;
 mod spectrometer;
 mod volume_markers;
 
+const STYLE: &str = r#"
+    label {
+        width: 200px;
+        height: 30px;
+        child-space: 1s;
+        font-size: 20;
+        color: #C2C2C2;
+    }
+    
+    knob {
+        width: 100px;
+        height: 100px;
+    }
+    
+    knob .track {
+        background-color: #ffb74d;
+    }
+    .label_knob {
+        border-width: 2px;
+        border-color: #28282b;
+        background-color: #000000;
+        col-between: 10px;
+        child-space: 1s;
+    }
+"#;
+
 #[derive(Lens)]
 pub struct UIData {
     data: Vec<f32>,
@@ -25,12 +51,20 @@ impl Model for UIData {
             Events::Update(data) => {
                 self.data = data.clone();
             }
+            Events::AttackChange(x) => {
+                self.attack = *x;
+            }
+            Events::ReleaseChange(x) => {
+                self.release = *x;
+            }
         });
     }
 }
 
 pub enum Events {
     Update(Vec<f32>),
+    AttackChange(f32),
+    ReleaseChange(f32)
 }
 
 pub fn ui(delivery_mutex: Arc<Mutex<Vec<f32>>>, sampling_rate: usize) {
@@ -42,20 +76,33 @@ pub fn ui(delivery_mutex: Arc<Mutex<Vec<f32>>>, sampling_rate: usize) {
         }
         .build(cx);
 
-        // TODO: Add knobs to connect attack and release over lenses
+        cx.add_theme(STYLE);
 
-        ZStack::new(cx, |cx| {
-            FrequencyMarkers::new(cx, sampling_rate);
-            VolumeMarkers::new(cx);
-            Spectrometer::new(
-                cx,
-                UIData::data,
-                sampling_rate,
-                Style::Spectrum,
-                Scale::Logarithmic,
-                vizia::vg::Color::hex("#f54e47"),
-            );
+        // TODO: Add knobs to connect attack and release over lenses
+        VStack::new(cx, |cx| {
+            ZStack::new(cx, |cx| {
+                FrequencyMarkers::new(cx, sampling_rate);
+                VolumeMarkers::new(cx);
+                Spectrometer::new(
+                    cx,
+                    UIData::data,
+                    sampling_rate,
+                    Style::Spectrum,
+                    Scale::Logarithmic,
+                    vizia::vg::Color::hex("#f54e47"),
+                );
+                // .attack(UIData::attack)
+                // .release(UIData::release);
+            })
+            .height(Percentage(80.));
+            HStack::new(cx, |cx| {
+                Knob::new(cx, 0.5, UIData::attack, false)
+                .on_changing(move |cx, val| cx.emit(Events::AttackChange(val)));
+                Knob::new(cx, 0.9, UIData::release, false)
+                .on_changing(move |cx, val| cx.emit(Events::ReleaseChange(val)));
+            });
         });
+        
     })
     .on_idle(move |cx| {
         if let Ok(x) = delivery_mutex.lock() {
