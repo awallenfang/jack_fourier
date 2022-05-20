@@ -18,6 +18,7 @@ pub fn process_thread(mut consumer: Consumer<f32>, delivery_mutex: Arc<Mutex<Vec
                 // https://en.wikipedia.org/wiki/Constant-Q_transform
                 // TODO: Research for other transforms with more exact low frequencies
                 // Increasing the sample content adds more low frequency data
+                // Maybe 2 ffts, one with every second sample removed to half the sample rate. Thus the lower frequency is pushed up
 
                 // Init the buffer
                 let mut buffer = Vec::<Complex<f32>>::new();

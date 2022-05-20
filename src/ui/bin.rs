@@ -16,7 +16,7 @@ impl Bin {
             val,
             history: -90.,
             attack: 0.5,
-            release: 0.95,
+            release: 0.9,
             frequency: 0.,
             smooth_val: val,
         }
