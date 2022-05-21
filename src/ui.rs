@@ -5,7 +5,10 @@ use crate::ui::{
 };
 use vizia::prelude::*;
 
-use self::{spectrometer::{Scale, Style, SpectrometerHandle}, frequency_markers::FreqMarkerHandle};
+use self::{
+    frequency_markers::FreqMarkerHandle,
+    spectrometer::{Scale, SpectrometerHandle, Style},
+};
 
 pub(crate) mod bin;
 mod frequency_markers;
@@ -46,7 +49,7 @@ pub struct UIData {
     release: f32,
     sr: usize,
     min_freq: f32,
-    max_freq: f32
+    max_freq: f32,
 }
 
 impl Model for UIData {
@@ -63,10 +66,10 @@ impl Model for UIData {
             }
             Events::MinChange(x) => {
                 self.min_freq = *x;
-            },
+            }
             Events::MaxChange(x) => {
                 self.max_freq = *x;
-            },
+            }
         });
     }
 }
@@ -76,7 +79,7 @@ pub enum Events {
     AttackChange(f32),
     ReleaseChange(f32),
     MinChange(f32),
-    MaxChange(f32)
+    MaxChange(f32),
 }
 
 pub fn ui(delivery_mutex: Arc<Mutex<Vec<f32>>>, sampling_rate: usize) {
@@ -87,7 +90,7 @@ pub fn ui(delivery_mutex: Arc<Mutex<Vec<f32>>>, sampling_rate: usize) {
             release: 0.9,
             sr: sampling_rate,
             min_freq: 0.,
-            max_freq: 1.
+            max_freq: 1.,
         }
         .build(cx);
 
@@ -97,8 +100,8 @@ pub fn ui(delivery_mutex: Arc<Mutex<Vec<f32>>>, sampling_rate: usize) {
         VStack::new(cx, |cx| {
             ZStack::new(cx, |cx| {
                 FrequencyMarkers::new(cx, sampling_rate)
-                .min(UIData::min_freq)
-                .max(UIData::max_freq);
+                    .min(UIData::min_freq)
+                    .max(UIData::max_freq);
 
                 VolumeMarkers::new(cx);
 
@@ -119,27 +122,26 @@ pub fn ui(delivery_mutex: Arc<Mutex<Vec<f32>>>, sampling_rate: usize) {
             HStack::new(cx, |cx| {
                 VStack::new(cx, |cx| {
                     Knob::new(cx, 0., UIData::min_freq, false)
-                    .on_changing(move |cx, val| cx.emit(Events::MinChange(val)));
+                        .on_changing(move |cx, val| cx.emit(Events::MinChange(val)));
                     Label::new(cx, "Min Hz");
                 });
                 VStack::new(cx, |cx| {
                     Knob::new(cx, 1., UIData::max_freq, false)
-                    .on_changing(move |cx, val| cx.emit(Events::MaxChange(val)));
+                        .on_changing(move |cx, val| cx.emit(Events::MaxChange(val)));
                     Label::new(cx, "Max Hz");
                 });
                 VStack::new(cx, |cx| {
                     Knob::new(cx, 0.5, UIData::attack, false)
-                    .on_changing(move |cx, val| cx.emit(Events::AttackChange(val)));
+                        .on_changing(move |cx, val| cx.emit(Events::AttackChange(val)));
                     Label::new(cx, "Attack");
                 });
                 VStack::new(cx, |cx| {
                     Knob::new(cx, 0.9, UIData::release, false)
-                    .on_changing(move |cx, val| cx.emit(Events::ReleaseChange(val)));
+                        .on_changing(move |cx, val| cx.emit(Events::ReleaseChange(val)));
                     Label::new(cx, "Release");
                 });
             });
         });
-        
     })
     .on_idle(move |cx| {
         if let Ok(x) = delivery_mutex.lock() {

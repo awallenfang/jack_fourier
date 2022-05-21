@@ -8,7 +8,7 @@ const C_FREQUENCIES: &[f32] = &[
 
 enum FreqEvents {
     UpdateMin(f32),
-    UpdateMax(f32)
+    UpdateMax(f32),
 }
 
 #[allow(dead_code)]
@@ -37,12 +37,18 @@ impl FrequencyMarkers {
     }
 
     fn freq_to_pos(&self, freq: f32) -> f32 {
-        self.map(freq.log2(), self.min_freq.log2(), self.max_freq.log2(), 0., 1.)
+        self.map(
+            freq.log2(),
+            self.min_freq.log2(),
+            self.max_freq.log2(),
+            0.,
+            1.,
+        )
     }
 }
 
 impl View for FrequencyMarkers {
-    fn event(&mut self, cx: &mut Context, event: &mut Event) {
+    fn event(&mut self, _cx: &mut Context, event: &mut Event) {
         event.map(|e, _| match e {
             FreqEvents::UpdateMin(x) => {
                 self.min_freq = 20. + x * (self.sr as f32 / 4.);
@@ -74,7 +80,7 @@ impl View for FrequencyMarkers {
 
         for (c_idx, freq) in C_FREQUENCIES.iter().enumerate() {
             if *freq < self.min_freq || *freq > self.max_freq {
-                continue
+                continue;
             }
 
             let freq_text = format!("C{}", c_idx);
