@@ -5,7 +5,7 @@ use crate::ui::{
 };
 use vizia::prelude::*;
 
-use self::spectrometer::{Scale, Style, SpectrometerHandle};
+use self::{spectrometer::{Scale, Style, SpectrometerHandle}, frequency_markers::FreqMarkerHandle};
 
 pub(crate) mod bin;
 mod frequency_markers;
@@ -44,6 +44,9 @@ pub struct UIData {
     data: Vec<f32>,
     attack: f32,
     release: f32,
+    sr: usize,
+    min_freq: f32,
+    max_freq: f32
 }
 
 impl Model for UIData {
@@ -58,6 +61,12 @@ impl Model for UIData {
             Events::ReleaseChange(x) => {
                 self.release = *x;
             }
+            Events::MinChange(x) => {
+                self.min_freq = *x;
+            },
+            Events::MaxChange(x) => {
+                self.max_freq = *x;
+            },
         });
     }
 }
@@ -65,7 +74,9 @@ impl Model for UIData {
 pub enum Events {
     Update(Vec<f32>),
     AttackChange(f32),
-    ReleaseChange(f32)
+    ReleaseChange(f32),
+    MinChange(f32),
+    MaxChange(f32)
 }
 
 pub fn ui(delivery_mutex: Arc<Mutex<Vec<f32>>>, sampling_rate: usize) {
@@ -74,6 +85,9 @@ pub fn ui(delivery_mutex: Arc<Mutex<Vec<f32>>>, sampling_rate: usize) {
             data: vec![-90.; crate::FFT_SIZE],
             attack: 0.5,
             release: 0.9,
+            sr: sampling_rate,
+            min_freq: 0.,
+            max_freq: 1.
         }
         .build(cx);
 
@@ -82,8 +96,12 @@ pub fn ui(delivery_mutex: Arc<Mutex<Vec<f32>>>, sampling_rate: usize) {
         // TODO: Add knobs to connect attack and release over lenses
         VStack::new(cx, |cx| {
             ZStack::new(cx, |cx| {
-                FrequencyMarkers::new(cx, sampling_rate);
+                FrequencyMarkers::new(cx, sampling_rate)
+                .min(UIData::min_freq)
+                .max(UIData::max_freq);
+
                 VolumeMarkers::new(cx);
+
                 Spectrometer::new(
                     cx,
                     UIData::data,
@@ -93,10 +111,22 @@ pub fn ui(delivery_mutex: Arc<Mutex<Vec<f32>>>, sampling_rate: usize) {
                     vizia::vg::Color::hex("#f54e47"),
                 )
                 .attack(UIData::attack)
-                .release(UIData::release);
+                .release(UIData::release)
+                .min(UIData::min_freq)
+                .max(UIData::max_freq);
             })
             .height(Percentage(80.));
             HStack::new(cx, |cx| {
+                VStack::new(cx, |cx| {
+                    Knob::new(cx, 0., UIData::min_freq, false)
+                    .on_changing(move |cx, val| cx.emit(Events::MinChange(val)));
+                    Label::new(cx, "Min Hz");
+                });
+                VStack::new(cx, |cx| {
+                    Knob::new(cx, 1., UIData::max_freq, false)
+                    .on_changing(move |cx, val| cx.emit(Events::MaxChange(val)));
+                    Label::new(cx, "Max Hz");
+                });
                 VStack::new(cx, |cx| {
                     Knob::new(cx, 0.5, UIData::attack, false)
                     .on_changing(move |cx, val| cx.emit(Events::AttackChange(val)));

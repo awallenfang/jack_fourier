@@ -8,13 +8,17 @@ pub struct Spectrometer {
     sr: usize,
     style: Style,
     scale: Scale,
-    col: vizia::vg::Color
+    col: vizia::vg::Color,
+    min_freq: f32,
+    max_freq: f32
 }
 
 pub enum VisEvents {
     Update(Vec<f32>),
     UpdateAttack(f32),
-    UpdateRelease(f32)
+    UpdateRelease(f32),
+    UpdateMin(f32),
+    UpdateMax(f32)
 }
 
 #[allow(dead_code)]
@@ -47,12 +51,16 @@ impl Spectrometer {
             bin.set_frequency(bin2freq(i, crate::FFT_SIZE, sampling_rate));
         }
 
+        
+
         Self {
             data,
             sr: sampling_rate,
             style,
             scale,
-            col
+            col,
+            min_freq: 20.,
+            max_freq: sampling_rate as f32 / 2.
         }
         .build(cx, move |cx| {
             // Bind the input lens to the meter event to update the position
@@ -60,6 +68,27 @@ impl Spectrometer {
                 cx.emit(VisEvents::Update(value.get(cx)));
             });
         })
+    }
+
+    fn scale(&self, pos: f32) -> f32 {
+        // NOTE: Maybe we can define a function that interpolates between a linear and a log scale
+        match self.scale {
+            Scale::Root(n) => map(
+                pos.powf(n),
+                self.min_freq.powf(n),
+                self.max_freq.powf(n),
+                0.,
+                1.,
+            ),
+            Scale::Logarithmic => map(
+                pos.log2(),
+                self.min_freq.log2(),
+                self.max_freq.log2(),
+                0.,
+                1.,
+            ),
+            Scale::Linear => map(pos, self.min_freq, self.max_freq, 0., 1.),
+        }
     }
 }
 
@@ -79,6 +108,12 @@ impl View for Spectrometer {
             VisEvents::UpdateRelease(x) => {
                 self.data.iter_mut().for_each(|bin| bin.set_release(*x));
             }
+            VisEvents::UpdateMin(x) => {
+                self.min_freq = 20. + x * (self.sr as f32 / 4.);
+            },
+            VisEvents::UpdateMax(x) => {
+                self.max_freq = (self.sr as f32 / 2.) - (1. - x) * (self.sr as f32 / 2.);
+            },
         });
     }
 
@@ -121,15 +156,52 @@ impl View for Spectrometer {
         match self.style {
             Style::Spectrum => {
                 let mut line_path = Path::new();
-                line_path.move_to(0.0, height);
-
+                
+                let mut first_bin_reached = false;
+                let mut last_bin_reached = false;
+                let mut bin_before_first_bin = self.data[0];
+                
                 for bin in data {
                     // TODO: sinc interpolation
                     // Logarithmic scaling
                     // Source: https://mu.krj.st/spectrm/
-                    let position = scale(bin.get_frequency(), self.scale, self.sr, width);
-                    let y_pos = map(bin.get_smooth_val(), 0., -90., 0., 1.);
-                    line_path.line_to(position, y_pos * height);
+
+                    // If the first bin hasn't been reached yet
+                    if !first_bin_reached {
+                        // Check if the new bin is in the region. If it is, then the saved bin is the one just outside of the window
+                        if bin.get_frequency() > self.min_freq && bin.get_frequency() < self.max_freq {
+                            // Set the start to the one outside the window
+                            // TODO: Interpolate this for the correct value
+                            line_path.move_to(0., map(bin_before_first_bin.get_smooth_val(), 0., -90., 0., 1.) * height);
+
+                            let position = self.scale(bin.get_frequency()) * width;
+                            let y_pos = map(bin.get_smooth_val(), 0., -90., 0., 1.);
+                            line_path.line_to(position, y_pos * height);
+
+                            first_bin_reached = true;
+                        } else {
+                            bin_before_first_bin = bin.clone();
+                        }
+                        continue
+                    }
+                    if !last_bin_reached {
+                        if bin.get_frequency() < self.max_freq {
+                            // Set the start to the one outside the window
+                            // TODO: Interpolate this for the correct value
+                            let position = self.scale(bin.get_frequency()) * width;
+                            let y_pos = map(bin.get_smooth_val(), 0., -90., 0., 1.);
+                            line_path.line_to(position, y_pos * height);
+                        } else {
+                            line_path.move_to(width, map(bin.get_smooth_val(), 0., -90., 0., 1.) * height);
+
+                            last_bin_reached = true;
+                        }
+                    }
+                    // if bin.get_frequency() > self.min_freq && bin.get_frequency() < self.max_freq{
+                    //     let position = self.scale(bin.get_frequency()) * width;
+                    //     let y_pos = map(bin.get_smooth_val(), 0., -90., 0., 1.);
+                    //     line_path.line_to(position, y_pos * height);
+                    // }
                 }
 
                 let mut line_paint = Paint::color(self.col);
@@ -145,7 +217,7 @@ impl View for Spectrometer {
                 // Util function to go [0,1] to bin, since the bins are overfitting
 
                 for bin in data {
-                    let position = scale(bin.get_frequency(), self.scale, self.sr, width);
+                    let position = self.scale(bin.get_frequency()) * width;
 
                     color_vec.push((position, gradient_color_map(bin.get_smooth_val())));
                 }
@@ -165,6 +237,8 @@ impl View for Spectrometer {
 pub trait SpectrometerHandle {
     fn attack(self, val: impl Res<f32>) -> Self;
     fn release(self, val: impl Res<f32>) -> Self;
+    fn min(self, val: impl Res<f32>) -> Self;
+    fn max(self, val: impl Res<f32>) -> Self;
 }
 
 impl SpectrometerHandle for Handle<'_, Spectrometer> {
@@ -183,28 +257,25 @@ impl SpectrometerHandle for Handle<'_, Spectrometer> {
 
         self
     }
-}
 
-fn scale(pos: f32, scale_type: Scale, sr: usize, width: f32) -> f32 {
-    // NOTE: Maybe we can define a function that interpolates between a linear and a log scale
-    match scale_type {
-        Scale::Root(n) => map(
-            pos.powf(n),
-            20.0_f32.powf(n),
-            (sr as f32 / 2.).powf(n),
-            0.,
-            width,
-        ),
-        Scale::Logarithmic => map(
-            pos.log2(),
-            20.0_f32.log2(),
-            (sr as f32 / 2.).log2(),
-            0.,
-            width,
-        ),
-        Scale::Linear => map(pos, 20.0, sr as f32 / 2., 0., width),
+    fn min(self, val: impl Res<f32>) -> Self {
+        val.set_or_bind(self.cx, self.entity, |cx, entity, value| {
+            cx.emit_to(entity, VisEvents::UpdateMin(value));
+        });
+
+        self
+    }
+
+    fn max(self, val: impl Res<f32>) -> Self {
+        val.set_or_bind(self.cx, self.entity, |cx, entity, value| {
+            cx.emit_to(entity, VisEvents::UpdateMax(value));
+        });
+
+        self
     }
 }
+
+
 
 /// Converts the bin index to a frequency in Hz
 ///
