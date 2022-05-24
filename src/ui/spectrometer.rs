@@ -44,7 +44,7 @@ impl Spectrometer {
         sampling_rate: usize,
         style: Style,
         scale: Scale,
-        col: vizia::vg::Color
+        col: vizia::vg::Color,
     ) -> Handle<Self> {
         // Build the data vector and precompute all frequencies
         let mut data = vec![Bin::new(-90.); crate::FFT_SIZE];
@@ -116,7 +116,6 @@ impl View for Spectrometer {
                 self.max_freq = (self.sr as f32 / 2.) - (1. - x) * (self.sr as f32 / 2.);
             }
             VisEvents::UpdateSlope(x) => {
-                println!("A");
                 self.slope = *x * 4.5;
             }
         });
@@ -182,12 +181,24 @@ impl View for Spectrometer {
                             // Set the start to the one outside the window
                             // TODO: Interpolate this for the correct value
                             let position = self.scale(bin.get_frequency()) * width;
-                            let y_pos = map(bin.get_smooth_val(), 0. - (bin.get_frequency().log2() * self.slope), -90., 0., 1.);
+                            let y_pos = map(
+                                bin.get_smooth_val(),
+                                0. - (bin.get_frequency().log2() * self.slope),
+                                -90.,
+                                0.,
+                                1.,
+                            );
                             line_path.line_to(position, y_pos * height);
                         } else {
                             line_path.move_to(
                                 width,
-                                map(bin.get_smooth_val(), 0. - (bin.get_frequency().log2() * self.slope), -90., 0., 1.) * height,
+                                map(
+                                    bin.get_smooth_val(),
+                                    0. - (bin.get_frequency().log2() * self.slope),
+                                    -90.,
+                                    0.,
+                                    1.,
+                                ) * height,
                             );
 
                             last_bin_reached = true;
