@@ -8,6 +8,7 @@ pub struct Spectrometer {
     sr: usize,
     style: Style,
     scale: Scale,
+    slope: f32,
     col: vizia::vg::Color,
     min_freq: f32,
     max_freq: f32,
@@ -19,6 +20,7 @@ pub enum VisEvents {
     UpdateRelease(f32),
     UpdateMin(f32),
     UpdateMax(f32),
+    UpdateSlope(f32),
 }
 
 #[allow(dead_code)]
@@ -42,7 +44,7 @@ impl Spectrometer {
         sampling_rate: usize,
         style: Style,
         scale: Scale,
-        col: vizia::vg::Color,
+        col: vizia::vg::Color
     ) -> Handle<Self> {
         // Build the data vector and precompute all frequencies
         let mut data = vec![Bin::new(-90.); crate::FFT_SIZE];
@@ -56,6 +58,7 @@ impl Spectrometer {
             sr: sampling_rate,
             style,
             scale,
+            slope: 3.0,
             col,
             min_freq: 20.,
             max_freq: sampling_rate as f32 / 2.,
@@ -112,6 +115,10 @@ impl View for Spectrometer {
             VisEvents::UpdateMax(x) => {
                 self.max_freq = (self.sr as f32 / 2.) - (1. - x) * (self.sr as f32 / 2.);
             }
+            VisEvents::UpdateSlope(x) => {
+                println!("A");
+                self.slope = *x * 4.5;
+            }
         });
     }
 
@@ -130,25 +137,7 @@ impl View for Spectrometer {
 
         let data = self.data.clone();
 
-        // Still not working T.T
-        // I give up for now
-
-        // This is old code where data was just a vec of f32s
-        // for (i,val) in data.iter_mut().enumerate() {
-        //     let mut new_val = *val;
-        //     if new_val > -89. {
-        //         let octave = bin2freq(i, self.data.len(), self.sr).log2();
-        //         new_val += (octave) * self.slope;
-
-        //         if new_val > 0. {
-
-        //             new_val = 0.;
-        //         }
-        //         *val = new_val;
-        //     }
-        // }
-
-        //TODO: 4.5dB dropoff pink noise
+        //TODO:Slope solution isn't perfect, but it's getting there
         //https://www.reddit.com/r/audioengineering/comments/agcr8d/i_ran_whitepink_noise_through_my_system_and/
 
         match self.style {
@@ -193,22 +182,17 @@ impl View for Spectrometer {
                             // Set the start to the one outside the window
                             // TODO: Interpolate this for the correct value
                             let position = self.scale(bin.get_frequency()) * width;
-                            let y_pos = map(bin.get_smooth_val(), 0., -90., 0., 1.);
+                            let y_pos = map(bin.get_smooth_val(), 0. - (bin.get_frequency().log2() * self.slope), -90., 0., 1.);
                             line_path.line_to(position, y_pos * height);
                         } else {
                             line_path.move_to(
                                 width,
-                                map(bin.get_smooth_val(), 0., -90., 0., 1.) * height,
+                                map(bin.get_smooth_val(), 0. - (bin.get_frequency().log2() * self.slope), -90., 0., 1.) * height,
                             );
 
                             last_bin_reached = true;
                         }
                     }
-                    // if bin.get_frequency() > self.min_freq && bin.get_frequency() < self.max_freq{
-                    //     let position = self.scale(bin.get_frequency()) * width;
-                    //     let y_pos = map(bin.get_smooth_val(), 0., -90., 0., 1.);
-                    //     line_path.line_to(position, y_pos * height);
-                    // }
                 }
 
                 let mut line_paint = Paint::color(self.col);
@@ -245,6 +229,7 @@ pub trait SpectrometerHandle {
     fn release(self, val: impl Res<f32>) -> Self;
     fn min(self, val: impl Res<f32>) -> Self;
     fn max(self, val: impl Res<f32>) -> Self;
+    fn slope(self, val: impl Res<f32>) -> Self;
 }
 
 impl SpectrometerHandle for Handle<'_, Spectrometer> {
@@ -275,6 +260,14 @@ impl SpectrometerHandle for Handle<'_, Spectrometer> {
     fn max(self, val: impl Res<f32>) -> Self {
         val.set_or_bind(self.cx, self.entity, |cx, entity, value| {
             cx.emit_to(entity, VisEvents::UpdateMax(value));
+        });
+
+        self
+    }
+
+    fn slope(self, val: impl Res<f32>) -> Self {
+        val.set_or_bind(self.cx, self.entity, |cx, entity, value| {
+            cx.emit_to(entity, VisEvents::UpdateSlope(value));
         });
 
         self

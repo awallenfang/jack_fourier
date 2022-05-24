@@ -50,6 +50,7 @@ pub struct UIData {
     sr: usize,
     min_freq: f32,
     max_freq: f32,
+    slope: f32
 }
 
 impl Model for UIData {
@@ -70,6 +71,9 @@ impl Model for UIData {
             Events::MaxChange(x) => {
                 self.max_freq = *x;
             }
+            Events::SlopeChange(x) => {
+                self.slope = *x;
+            }
         });
     }
 }
@@ -80,6 +84,7 @@ pub enum Events {
     ReleaseChange(f32),
     MinChange(f32),
     MaxChange(f32),
+    SlopeChange(f32)
 }
 
 pub fn ui(delivery_mutex: Arc<Mutex<Vec<f32>>>, sampling_rate: usize) {
@@ -91,6 +96,7 @@ pub fn ui(delivery_mutex: Arc<Mutex<Vec<f32>>>, sampling_rate: usize) {
             sr: sampling_rate,
             min_freq: 0.,
             max_freq: 1.,
+            slope: 0.0,
         }
         .build(cx);
 
@@ -111,12 +117,13 @@ pub fn ui(delivery_mutex: Arc<Mutex<Vec<f32>>>, sampling_rate: usize) {
                     sampling_rate,
                     Style::Spectrum,
                     Scale::Logarithmic,
-                    vizia::vg::Color::hex("#f54e47"),
+                    vizia::vg::Color::hex("#f54e47")
                 )
                 .attack(UIData::attack)
                 .release(UIData::release)
                 .min(UIData::min_freq)
-                .max(UIData::max_freq);
+                .max(UIData::max_freq)
+                .slope(UIData::slope);
             })
             .height(Percentage(80.));
             HStack::new(cx, |cx| {
@@ -139,6 +146,11 @@ pub fn ui(delivery_mutex: Arc<Mutex<Vec<f32>>>, sampling_rate: usize) {
                     Knob::new(cx, 0.9, UIData::release, false)
                         .on_changing(move |cx, val| cx.emit(Events::ReleaseChange(val)));
                     Label::new(cx, "Release");
+                });
+                VStack::new(cx, |cx| {
+                    Knob::new(cx, 0.0, UIData::slope, false)
+                        .on_changing(move |cx, val| cx.emit(Events::SlopeChange(val)));
+                    Label::new(cx, UIData::slope.map(|e| e * 4.5));
                 });
             });
         });
