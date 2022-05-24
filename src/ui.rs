@@ -50,7 +50,7 @@ pub struct UIData {
     sr: usize,
     min_freq: f32,
     max_freq: f32,
-    slope: f32
+    slope: f32,
 }
 
 impl Model for UIData {
@@ -84,7 +84,7 @@ pub enum Events {
     ReleaseChange(f32),
     MinChange(f32),
     MaxChange(f32),
-    SlopeChange(f32)
+    SlopeChange(f32),
 }
 
 pub fn ui(delivery_mutex: Arc<Mutex<Vec<f32>>>, sampling_rate: usize) {
@@ -117,7 +117,7 @@ pub fn ui(delivery_mutex: Arc<Mutex<Vec<f32>>>, sampling_rate: usize) {
                     sampling_rate,
                     Style::Spectrum,
                     Scale::Logarithmic,
-                    vizia::vg::Color::hex("#f54e47")
+                    vizia::vg::Color::hex("#f54e47"),
                 )
                 .attack(UIData::attack)
                 .release(UIData::release)
