@@ -136,8 +136,7 @@ impl View for Spectrometer {
 
         let data = self.data.clone();
 
-        //TODO:Slope solution isn't perfect, but it's getting there
-        //https://www.reddit.com/r/audioengineering/comments/agcr8d/i_ran_whitepink_noise_through_my_system_and/
+        //TODO: Slope solution isn't perfect, but it's getting there
 
         match self.style {
             Style::Spectrum => {

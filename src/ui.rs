@@ -66,10 +66,10 @@ impl Model for UIData {
                 self.release = *x;
             }
             Events::MinChange(x) => {
-                self.min_freq = *x;
+                self.min_freq = *x * *x;
             }
             Events::MaxChange(x) => {
-                self.max_freq = *x;
+                self.max_freq = *x * *x;
             }
             Events::SlopeChange(x) => {
                 self.slope = *x;
@@ -102,7 +102,6 @@ pub fn ui(delivery_mutex: Arc<Mutex<Vec<f32>>>, sampling_rate: usize) {
 
         cx.add_theme(STYLE);
 
-        // TODO: Add knobs to connect attack and release over lenses
         VStack::new(cx, |cx| {
             ZStack::new(cx, |cx| {
                 FrequencyMarkers::new(cx, sampling_rate)

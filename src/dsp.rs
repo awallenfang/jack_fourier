@@ -13,7 +13,7 @@ pub fn process_thread(mut consumer: Consumer<f32>, delivery_mutex: Arc<Mutex<Vec
             // Loop until the ringbuffer has enough samples
             if consumer.len() >= BUFFER_SIZE {
                 // TODO: Carry over FFT like wolf
-                // TODO: We always know the max length, so an array would be possible
+                // TODO: We always know the max length, so an array would be possible. But that wouldn't easily allow changabe resolutions
                 // TODO: Constant-Q transform
                 // https://en.wikipedia.org/wiki/Constant-Q_transform
                 // TODO: Research for other transforms with more exact low frequencies
